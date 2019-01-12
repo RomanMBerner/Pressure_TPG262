@@ -263,15 +263,33 @@ class TPG261(TPG26x):
 
 
 print "Setting up connection"
-gauge = TPG262(port='/dev/ttyUSB0')
+gauge = TPG262(port='/dev/ttyUSB1')
 #print "Communication test successful: ", gauge.rs232_communication_test()
 
 while 1:
-    pressure = gauge.pressure_value()
-    #unit = dgauge.pressure_unit()
-    if pressure < 0.:
-        pressure = 0.
-    print pressure,"mbar"
-    post_bar = "pressure_bar,sensor=1,pos=outer_bath value=" + str(pressure)
-    subprocess.call(["curl", "-i", "-XPOST", "lhepdaq2.unibe.ch:8086/write?db=module_zero_run_jan2019", "--data-binary", post_bar])
-    time.sleep(1)
+    gauge._send_command('PRX')
+    reply = gauge._get_data()
+    # the answer is of the form: statusCode1,pressure1,statusCode2,pressure2
+    statusCode_p1 = int(reply.split(',')[0])
+    p1 = float(reply.split(',')[1])
+    statusCode_p2 = int(reply.split(',')[2])
+    p2 = float(reply.split(',')[3])
+    #print statusCode_p1,p1,statusCode_p2,p2
+
+
+    # Send data to database (only if data is of good quality, e.g. statusCode==0)
+    if statusCode_p1==0 and p1>=0.:
+        print "p1 =", p1, gauge.pressure_unit()
+        post1_bar = "pressure_bar,sensor=1,pos=outer_bath value=" + str(p1)
+        subprocess.call(["curl", "-i", "-XPOST", "lhepdaq2.unibe.ch:8086/write?db=module_zero_run_jan2019", "--data-binary", post1_bar])
+    if statusCode_p1!=0:
+        print "No good data for sensor 1. StatusCode =", statusCode_p1
+
+    if statusCode_p2==0 and p2>=0.:
+        print "p2 =", p2, gauge.pressure_unit()
+        post2_bar = "pressure_bar,sensor=2,pos=outer_bath value=" + str(p2)
+        subprocess.call(["curl", "-i", "-XPOST", "lhepdaq2.unibe.ch:8086/write?db=module_zero_run_jan2019", "--data-binary", post2_bar])
+    if statusCode_p2!=0:
+        print "No good data for sensor 2. StatusCode =", statusCode_p2
+
+    time.sleep(0.95)
