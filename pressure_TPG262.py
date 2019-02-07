@@ -6,7 +6,7 @@
 # From the serial output, put a NullModem before connecting         //
 # to the Ser232->USB converter (see datasheet p.23)                 //
 #                                                                   //
-# Last modifications: 13.01.2019 by R.Berner                        //
+# Last modifications: 07.02.2019 by R.Berner                        //
 #                                                                   //
 # ///////////////////////////////////////////////////////////////// //
 
@@ -42,7 +42,7 @@ while 1:
 
     if statusCode_p2==0 and p2>=0.:
         print "p2 =", p2, gauge.pressure_unit()
-        post2_bar = "pressure_bar,sensor=2,pos=outer_bath value=" + str(p2)
+        post2_bar = "pressure_bar,sensor=2,pos=insulation_vacuum value=" + str(p2)
         subprocess.call(["curl", "-i", "-XPOST", "lhepdaq2.unibe.ch:8086/write?db=module_zero_run_jan2019", "--data-binary", post2_bar])
     if statusCode_p2==1: print "Sensor 2: Underrange"
     if statusCode_p2==2: print "Sensor 2: Overrange"
