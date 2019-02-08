@@ -6,7 +6,7 @@
 # From the serial output, put a NullModem before connecting         //
 # to the Ser232->USB converter (see datasheet p.23)                 //
 #                                                                   //
-# Last modifications: 07.02.2019 by R.Berner                        //
+# Last modifications: 08.02.2019 by R.Berner                        //
 #                                                                   //
 # ///////////////////////////////////////////////////////////////// //
 
@@ -14,20 +14,28 @@ from   class_def import *
 import subprocess
 import time
 
+# Define offset
+offset_p1 = -0.55
+offset_p2 = 0
+
 # Setting up connection
 print "Setting up connection"
 gauge = TPG262(port='/dev/ttyUSB1')
 
 # Acquiring data
 while 1:
-    gauge._send_command('PRX')
-    answer = gauge._get_data()
+    try:
+        gauge._send_command('PRX')
+        answer = gauge._get_data()
+    except (IOError):
+        pass
+
     try:
         # The answer is of the form: statusCode1,pressure1,statusCode2,pressure2
         statusCode_p1 = int(answer.split(',')[0])
-        p1 = float(answer.split(',')[1])
+        p1 = float(answer.split(',')[1]) + offset_p1
         statusCode_p2 = int(answer.split(',')[2])
-        p2 = float(answer.split(',')[3])
+        p2 = float(answer.split(',')[3]) + offset_p2
 
         # Send data to database (only if data is of good quality, e.g. statusCode==0)
         if statusCode_p1==0 and p1>=0.:
@@ -53,7 +61,6 @@ while 1:
         if statusCode_p2==6: print "Sensor 2: Identification error"
 
         time.sleep(0.95)
-        
+
     except (ValueError,IndexError,IOError):
-        #print "error"
         pass
